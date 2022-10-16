@@ -1,0 +1,57 @@
+---
+title: "Exploración del conjunto de datos"
+output: html_notebook
+---
+
+# Setup
+## Preparar la ruta para obtener los archivos
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "./data/train/")
+getwd()
+```
+
+## Cargar librerías
+```{r}
+library(ncdf4)
+```
+
+# Cargar datos de entrenamiento
+
+## Predictores
+
+```{r}
+## Precipitación
+apcp <- nc_open("apcp_sfc_latlon_subset_19940101_20071231.nc") 
+## Flujo de radiación, onda larga
+dlwrf <- nc_open("dlwrf_sfc_latlon_subset_19940101_20071231.nc")
+## Flujo de radiación, onda corta
+dswrf <- nc_open("dswrf_sfc_latlon_subset_19940101_20071231.nc") 
+## Presión atmosférica
+pres_msl <- nc_open("pres_msl_latlon_subset_19940101_20071231.nc") 
+## Agua precipitable
+pwat <- nc_open("pwat_eatm_latlon_subset_19940101_20071231.nc") 
+## Humedad específica, 2 metros sobre el nivel del mar
+spfh <- nc_open("spfh_2m_latlon_subset_19940101_20071231.nc")
+## Porcentaje de cielo nublado
+tcdc <- nc_open("tcdc_eatm_latlon_subset_19940101_20071231.nc")
+## Nivel de condensación
+tcolc <- nc_open("tcolc_eatm_latlon_subset_19940101_20071231.nc")
+## Temperatura máxma
+tmax <- nc_open("tmax_2m_latlon_subset_19940101_20071231.nc")
+## Temperatura mínima
+tmin <- nc_open("tmin_2m_latlon_subset_19940101_20071231.nc")
+## Temperatura actual, dos metros sobre la superficie
+tmp.2m <- nc_open("tmp_2m_latlon_subset_19940101_20071231.nc")
+## Temperatura en la superficie
+tmp.sfc <-nc_open("tmp_sfc_latlon_subset_19940101_20071231.nc")
+## Radiación onda larga en la superficie
+ulwrf.sfc <- nc_open("ulwrf_sfc_latlon_subset_19940101_20071231.nc")
+## Radiación onda larga en la atmosfera
+ulwrf.atm <- nc_open("ulwrf_tatm_latlon_subset_19940101_20071231.nc")
+## Radiación onda corta en la superficie
+uswrf <- nc_open("uswrf_sfc_latlon_subset_19940101_20071231.nc")
+
+print("¡Archivos abiertos exitosamente!")
+```
+
