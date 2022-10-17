@@ -1,0 +1,80 @@
+---
+title: "Reporte de avance"
+output: html_notebook
+date: "2022-10-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Preparación
+
+## Librerías
+```{r librerias}
+library(ncdf4)
+```
+
+## Cargar datos
+
+### Predictores
+```{r cargar_predictores}
+## Flujo de radiación, onda larga
+dlwrf <- nc_open("../../data/train/dlwrf_sfc_latlon_subset_19940101_20071231.nc")
+## Flujo de radiación, onda corta
+dswrf <- nc_open("../../data/train/dswrf_sfc_latlon_subset_19940101_20071231.nc") 
+```
+
+### Datos de las estaciones
+```{r estaciones}
+stations <- read.csv("../../data/station_info.csv")
+```
+
+### Resultados de entrenamiento
+```{r y_train}
+energy <- read.csv("../../data/train.csv")
+```
+# Exploración de los datos
+
+Todos los predictores tienen el mismo formato:
+
+**3 variables**
+* intTime
+* intValidTime
+* <VariableDeInterés>
+
+**Cada variable tiene 5 dimensiones**
+* time
+* lat
+* lon
+* ens
+* fhour
+  
+```{r exploracion_general}
+print(attributes(dlwrf$var))
+print(attributes(dswrf$var))
+
+# Ver el formato
+print(dlwrf)
+```
+## Datos de interés
+Cada variable tiene exactamente las mismas cinco dimensiones. 
+Del resumen impreso arriba podemos rescatar los siguientes valores importantes:
+
+Dimensión     | Tamaño      | Valor Mínimo    | Valor Máximo    |
+------------- | ------------|-----------------|-----------------|
+Latitud       | 9           | 31              | 39             |
+Longitud       | 16           | 254              | 269             |
+Ensemble       | 11           | 1              | 11             |
+fHour       | 5           | 12              | 24             |
+Tiempo       | 5113           |  1700586             | 1823256    |
+
+
+```{r}
+dlwrf.data <- ncvar_get(dlwrf, "Downward_Long-Wave_Rad_Flux")
+dswrf.data <- ncvar_get(dswrf, "Downward_Short-Wave_Rad_Flux")
+
+# Todas las variables manejan el mismo tiempo
+time <- ncvar_get(dlwrf, "time")
+```
+
