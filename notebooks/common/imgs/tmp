@@ -1,0 +1,17 @@
+apcp = acme.apcp.means,
+dlwrf = acme.dlwrf.means,
+dswrf = acme.dswrf.means,
+pres_msl = acme.pres_msl.means,
+pwat = acme.pwat.means,
+spfh = acme.spfh.means,
+tcdc = acme.tcdc.means,
+tcolc = acme.tcolc.means,
+tmax = acme.tmax.means,
+tmin = acme.tmin.means,
+tmp2m = acme.tmp2m.means,
+tmpsfc = acme.tmpsfc.means,
+ulwrfsfc = acme.ulwrfsfc.means,
+ulwrfatm = acme.ulwrfatm.means,
+uswrf = acme.uswrf.means
+
+dswrf = acme.dswrf.means)

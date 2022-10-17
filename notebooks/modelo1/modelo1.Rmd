@@ -9,12 +9,19 @@ knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r funciones_auxiliares, include=FALSE}
+
+# Get dates with needed format
+time <- ncvar_get(dlwrf, "time")
+dates <- as.Date(as.POSIXct(time*3600, origin='1800-01-01 00:00:00', 'UTC'))
+dates <- gsub('-', '', dates)
+dates <- strtoi(dates)
+
 namedSeq <- function(name, stop, steps=1, start=1) {
   return(paste(name, seq(from=start, to=stop, by=steps), sep=""))
 }
 
 nameCols <- function(data) {
-  dimnames(data)[[5]] <- namedSeq("time_", 5113)
+  dimnames(data)[[5]] <- dates
   ## Latitud
   dimnames(data)[[2]] <- namedSeq("", 39, start=31)
   ## Longitud
@@ -32,16 +39,43 @@ nameCols <- function(data) {
 ## Librerías
 ```{r librerias}
 library(ncdf4)
+library(car)
 ```
 
 ## Cargar datos
 
 ### Predictores
 ```{r cargar_predictores}
+## Precipitación
+apcp <- nc_open("../../data/train/apcp_sfc_latlon_subset_19940101_20071231.nc") 
 ## Flujo de radiación, onda larga
 dlwrf <- nc_open("../../data/train/dlwrf_sfc_latlon_subset_19940101_20071231.nc")
 ## Flujo de radiación, onda corta
 dswrf <- nc_open("../../data/train/dswrf_sfc_latlon_subset_19940101_20071231.nc") 
+## Presión atmosférica
+pres_msl <- nc_open("../../data/train/pres_msl_latlon_subset_19940101_20071231.nc") 
+## Agua precipitable
+pwat <- nc_open("../../data/train/pwat_eatm_latlon_subset_19940101_20071231.nc") 
+## Humedad específica, 2 metros sobre el nivel del mar
+spfh <- nc_open("../../data/train/spfh_2m_latlon_subset_19940101_20071231.nc")
+## Porcentaje de cielo nublado
+tcdc <- nc_open("../../data/train/tcdc_eatm_latlon_subset_19940101_20071231.nc")
+## Nivel de condensación
+tcolc <- nc_open("../../data/train/tcolc_eatm_latlon_subset_19940101_20071231.nc")
+## Temperatura máxma
+tmax <- nc_open("../../data/train/tmax_2m_latlon_subset_19940101_20071231.nc")
+## Temperatura mínima
+tmin <- nc_open("../../data/train/tmin_2m_latlon_subset_19940101_20071231.nc")
+## Temperatura actual, dos metros sobre la superficie
+tmp.2m <- nc_open("../../data/train/tmp_2m_latlon_subset_19940101_20071231.nc")
+## Temperatura en la superficie
+tmp.sfc <-nc_open("../../data/train/tmp_sfc_latlon_subset_19940101_20071231.nc")
+## Radiación onda larga en la superficie
+ulwrf.sfc <- nc_open("../../data/train/ulwrf_sfc_latlon_subset_19940101_20071231.nc")
+## Radiación onda larga en la atmosfera
+ulwrf.atm <- nc_open("../../data/train/ulwrf_tatm_latlon_subset_19940101_20071231.nc")
+## Radiación onda corta en la superficie
+uswrf <- nc_open("../../data/train/uswrf_sfc_latlon_subset_19940101_20071231.nc")
 ```
 
 ### Datos de las estaciones
@@ -114,32 +148,42 @@ Esto será tomado en cuenta al etiquetar la longitud en los datos de entrenamien
 
 ```{r ncvar_get_vars}
 # Primero obtener las variables de interés
+apcp.data <- ncvar_get(apcp, "Total_precipitation")
 dlwrf.data <- ncvar_get(dlwrf, "Downward_Long-Wave_Rad_Flux")
 dswrf.data <- ncvar_get(dswrf, "Downward_Short-Wave_Rad_Flux")
+pres_msl.data <- ncvar_get(pres_msl, "Pressure")
+pwat.data <- ncvar_get(pwat, "Precipitable_water")
+spfh.data <- ncvar_get(spfh, "Specific_humidity_height_above_ground")
+tcdc.data <- ncvar_get(tcdc, "Total_cloud_cover")
+tcolc.data <- ncvar_get(tcolc, "Total_Column-Integrated_Condensate")
+tmax.data <- ncvar_get(tmax, "Maximum_temperature")
+tmin.data <- ncvar_get(tmin, "Minimum_temperature")
+tmp2m.data <- ncvar_get(tmp.2m, "Temperature_height_above_ground")
+tmpsfc.data <- ncvar_get(tmp.sfc, "Temperature_surface")
+ulwrfsfc.data <- ncvar_get(ulwrf.sfc, "Upward_Long-Wave_Rad_Flux_surface")
+ulwrfatm.data <- ncvar_get(ulwrf.atm, "Upward_Long-Wave_Rad_Flux")
+uswrf.data <- ncvar_get(uswrf, "Upward_Short-Wave_Rad_Flux")
 ```
 
-```{r etiquetar_lon_lat}
-# Etiquetar las dimensiones Latitud y Longitud
-# Latitud: 9 [Índice 2]
-# Longitud: 16 [Índice 1]
-dim(dlwrf.data)
-
-# Valores obtenidos del resumen
-lat.inicial = 31
-lat.final = 39
-# Se resta 360 para convertir de grados positivos a la representación que tienen
-# las coordenadas de las estaciones.
-lon.inicial = 254 - 360
-lon.final = 269 - 360
-
-dimnames(dlwrf.data)[[2]] <- seq(from=lat.inicial, to=lat.final)
-dimnames(dlwrf.data)[[1]] <- seq(from=lon.inicial, to=lon.final)
-
-dimnames(dswrf.data)[[2]] <- seq(from=lat.inicial, to=lat.final)
-dimnames(dswrf.data)[[1]] <- seq(from=lon.inicial, to=lon.final)
+```{r etiquetar_datos}
+apcp.data <- nameCols(apcp.data)
+dlwrf.data <- nameCols(dlwrf.data)
+dswrf.data <- nameCols(dswrf.data)
+pres_msl.data <- nameCols(pres_msl.data)
+pwat.data <- nameCols(pwat.data)
+spfh.data <- nameCols(spfh.data)
+tcdc.data <- nameCols(tcdc.data)
+tcolc.data <- nameCols(tcolc.data)
+tmax.data <- nameCols(tmax.data)
+tmin.data <- nameCols(tmin.data)
+tmp2m.data <- nameCols(tmp2m.data)
+tmpsfc.data <- nameCols(tmpsfc.data)
+ulwrfsfc.data <- nameCols(ulwrfsfc.data)
+ulwrfatm.data <- nameCols(ulwrfatm.data)
+uswrf.data <- nameCols(uswrf.data)
 
 # Muestra de como queda etiquetado
-print(dlwrf.data[,,1,1,1])
+#print(dlwrf.data[,,,,])
 ```
 ### Ensemble
 De acuerdo con el [glosario](https://forecast.weather.gov/glossary.php?word=ENSEMBLE)
@@ -160,8 +204,21 @@ print(comparativo)
 El primer *ensemble* es el de control, y es el que será utilizado para este modelo.
 
 ```{r extraer_ensemble}
+apcp.data.e1 <- apcp.data[,,,1,]
 dlwrf.data.e1 <- dlwrf.data[,,,1,]
 dswrf.data.e1 <- dswrf.data[,,,1,]
+pres_msl.data.e1 <- pres_msl.data[,,,1,]
+pwat.data.e1 <- pwat.data[,,,1,]
+spfh.data.e1 <- spfh.data[,,,1,]
+tcdc.data.e1 <- tcdc.data[,,,1,]
+tcolc.data.e1 <- tcolc.data[,,,1,]
+tmax.data.e1 <- tmax.data[,,,1,]
+tmin.data.e1 <- tmin.data[,,,1,]
+tmp2m.data.e1 <- tmp2m.data[,,,1,]
+tmpsfc.data.e1 <- tmpsfc.data[,,,1,]
+ulwrfsfc.data.e1 <- ulwrfsfc.data[,,,1,]
+ulwrfatm.data.e1 <- ulwrfatm.data[,,,1,]
+uswrf.data.e1 <- uswrf.data[,,,1,]
 
 dim(dlwrf.data.e1)
 ```
@@ -171,10 +228,10 @@ variable de interés. Esto sucede cinco veces en el día: Empieza a las 12,
 y se repite en intervalos de 3 horas, terminando a las 24.
 
 ```{r etiquetar_fhour}
-dimnames(dlwrf.data.e1)[[3]] <- namedSeq("fhour_", 24, steps=3, start=12)
-dimnames(dswrf.data.e1)[[3]] <- namedSeq("fhour_", 24, steps=3, start=12)
+#dimnames(dlwrf.data.e1)[[3]] <- namedSeq("fhour_", 24, steps=3, start=12)
+#dimnames(dswrf.data.e1)[[3]] <- namedSeq("fhour_", 24, steps=3, start=12)
 
-print(dlwrf.data.e1[1,1,,1])
+#print(dlwrf.data.e1[1,1,,1])
 ```
 ### Tiempo
 Es la fecha en la que se tomó la medición de la variable. Esta columna corresponde
@@ -184,11 +241,11 @@ Sus valores son obtenidos de la variable `time` contenida en el conjunto de dato
 
 ```{r extraer_tiempo}
 # Todas las variables manejan el mismo tiempo
-time <- ncvar_get(dlwrf, "time")
+#time <- ncvar_get(dlwrf, "time")
 
 # Diferente formato
-head(time)
-head(energy_train$Date)
+#head(time)
+#head(energy_train$Date)
 ```
 Comparando la variable `time` con las fechas de los datos de entrenamiento, se 
 observa que su formato no coincide. Cada una está representando su tiempo de 
@@ -202,21 +259,21 @@ forma distinta:
 Por lo tanto es necesario convertir nuestro tiempo en horas, a fecha.
 
 ```{r hora->fecha}
-dates <- as.Date(as.POSIXct(time*3600, origin='1800-01-01 00:00:00', 'UTC'))
-dates <- gsub('-', '', dates)
+#dates <- as.Date(as.POSIXct(time*3600, origin='1800-01-01 00:00:00', 'UTC'))
+#dates <- gsub('-', '', dates)
 # Además, energy_train$Date tiene sus fechas como ints
-dates <- strtoi(dates)
+#dates <- strtoi(dates)
 
-head(dates)
-head(energy_train$Date)
+#head(dates)
+#head(energy_train$Date)
 ```
 Con estos valores, se pueden etiquetar nuestros predictores:
 
 ```{r etiquetar_hora}
-dimnames(dlwrf.data.e1)[[4]] <- dates
-dimnames(dswrf.data.e1)[[4]] <- dates
+#dimnames(dlwrf.data.e1)[[4]] <- dates
+#dimnames(dswrf.data.e1)[[4]] <- dates
 
-head(dlwrf.data.e1[1,1,1,])
+#head(dlwrf.data.e1[1,1,1,])
 ```
 
 # Preparar los subconjuntos de entrenamiento
@@ -244,19 +301,66 @@ Se determinó que las coordenadas más cercanas a ACME son: (35, -98).
 Con estos datos extraemos las mediciones correspondientes.
 
 ```{r mediciones_acme}
-acme.dlwrf <- dlwrf.data.e1[acme.lon, acme.lat,,]
-acme.dswrf <- dswrf.data.e1[acme.lon, acme.lat,,]
+acme.apcp <- apcp.data.e1[acme.lon, acme.lat, ,]
+acme.dlwrf <- dlwrf.data.e1[acme.lon, acme.lat, ,]
+acme.dswrf <- dswrf.data.e1[acme.lon, acme.lat, ,]
+acme.pres_msl <- pres_msl.data.e1[acme.lon, acme.lat, ,]
+acme.pwat <- pwat.data.e1[acme.lon, acme.lat, ,]
+acme.spfh <- spfh.data.e1[acme.lon, acme.lat, ,]
+acme.tcdc <- tcdc.data.e1[acme.lon, acme.lat, ,]
+acme.tcolc <- tcolc.data.e1[acme.lon, acme.lat, ,]
+acme.tmax <- tmax.data.e1[acme.lon, acme.lat, ,]
+acme.tmin <- tmin.data.e1[acme.lon, acme.lat, ,]
+acme.tmp2m <- tmp2m.data.e1[acme.lon, acme.lat, ,]
+acme.tmpsfc <- tmpsfc.data.e1[acme.lon, acme.lat, ,]
+acme.ulwrfsfc <- ulwrfsfc.data.e1[acme.lon, acme.lat, ,]
+acme.ulwrfatm <- ulwrfatm.data.e1[acme.lon, acme.lat, ,]
+acme.uswrf <- uswrf.data.e1[acme.lon, acme.lat, ,]
+```
 
+```{r promedios_mediciones}
 # Para simplificar este primer experimento, se decidió promediar las predicciones
 # a lo largo del día
+acme.apcp.means <- colMeans(acme.apcp)
 acme.dlwrf.means <- colMeans(acme.dlwrf)
 acme.dswrf.means <- colMeans(acme.dswrf)
+acme.pres_msl.means <- colMeans(acme.pres_msl)
+acme.pwat.means <- colMeans(acme.pwat)
+acme.spfh.means <- colMeans(acme.spfh)
+acme.tcdc.means <- colMeans(acme.tcdc)
+acme.tcolc.means <- colMeans(acme.tcolc)
+acme.tmax.means <- colMeans(acme.tmax)
+acme.tmin.means <- colMeans(acme.tmin)
+acme.tmp2m.means <- colMeans(acme.tmp2m)
+acme.tmpsfc.means <- colMeans(acme.tmpsfc)
+acme.ulwrfsfc.means <- colMeans(acme.ulwrfsfc)
+acme.ulwrfatm.means <- colMeans(acme.ulwrfatm)
+acme.uswrf.means <- colMeans(acme.uswrf)
+```
+
+```{r acme_final}
 acme.final <- data.frame(
   Date = names(acme.dlwrf.means),
+  apcp = acme.apcp.means,
   dlwrf = acme.dlwrf.means,
-  dswrf = acme.dswrf.means)
+  dswrf = acme.dswrf.means,
+  pres_msl = acme.pres_msl.means,
+  pwat = acme.pwat.means,
+  spfh = acme.spfh.means,
+  tcdc = acme.tcdc.means,
+  tcolc = acme.tcolc.means,
+  tmax = acme.tmax.means,
+  tmin = acme.tmin.means,
+  tmp2m = acme.tmp2m.means,
+  tmpsfc = acme.tmpsfc.means,
+  ulwrfsfc = acme.ulwrfsfc.means,
+  ulwrfatm = acme.ulwrfatm.means,
+  uswrf = acme.uswrf.means
+)
 print(acme.final)
 ```
+
+
 
 ## Respuesta esperada
 Ya que se tienen los predictores, solo hace falta conocer cuánta energía se 
@@ -274,55 +378,39 @@ print(energy.acme)
 Y se combina con los predictores en un solo Dataframe para poder crear modelos.
 ```{r crear_datos_entrenamiento_final}
 energy.acme <- merge(energy.acme, acme.final, by="Date")
+```
+
+```{r}
+print(names(energy.acme))
 print(energy.acme)
 ```
 
+
 # Creación de modelos
-
-## Regresión lineal simple
-
-Usando un solo predictor: dlwrf
-
-Observaciones:
-
-* Se detecta un patrón no-lineal en la gráfica de *Residuals vs Fitted*
-* La gráfica *Q-Q* indica que los residuales no están distribuidos de forma normal
-* No se identifican puntos de apalancamiento
-* La efectividad del modelo es pésima, lo que era de esperarse
-* El predictor dlwrf parece ser significativo
-
-```{r rls}
-lm.fit <- lm(ACME ~ dlwrf, data=energy.acme)
-plot(lm.fit)
-summary(lm.fit)
+```{r}
+cor(energy.acme[, -1])
 ```
-**Observaciones**
-
-* Casi se elimina el patrón no-lineal en la gráfica **Residuals vs Fitted**
-* La efectividad del modelo mejora marginalmente
-```{r rls_sqrd}
-lm.fit2 <- lm(ACME ~ dlwrf + I(dlwrf^2), data=energy.acme)
-plot(lm.fit2)
-summary(lm.fit2)
+```{r}
+plot(energy.acme$ulwrfsfc, energy.acme$tmax)
 ```
+
 
 ## Regresión lineal múltiple
-
-Verificamos que no haya correlación entre los datos
-```{r correlacion}
-plot(energy.acme$dlwrf, energy.acme$dswrf)
-```
 ```{r rlm}
-lmm.fit <- lm(ACME ~ dlwrf + dswrf, data=energy.acme)
-
+lmm.fit <- lm(ACME ~ poly(dlwrf, 2) + poly(dswrf, 3) + ulwrfatm + tmax +
+            tmpsfc + pwat, data=energy.acme)
 plot(lmm.fit)
+print(vif(lmm.fit))
 summary(lmm.fit)
 ```
+**Best yet**
+R^2: 0.8193
+RSE: 3 348 000
+Formula: ACME ~ poly(dlwrf, 2) + poly(dswrf, 3) + ulwrfatm + tmax + tmpsfc + pwat
 
-```{r rlm2}
-lmm.fit2 <- lm(ACME ~ poly(dlwrf, 2) + poly(dswrf, 2), data=energy.acme)
-
-plot(lmm.fit2)
-summary(lmm.fit2)
+Mean ACME: 16 877 462
+RSE ~ 19.83%
+```{r}
+mean(energy.acme$ACME)
 ```
 
