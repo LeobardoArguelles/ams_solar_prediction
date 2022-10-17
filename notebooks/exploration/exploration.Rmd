@@ -7,8 +7,7 @@ output: html_notebook
 ## Preparar la ruta para obtener los archivos
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = "./data/train/")
-getwd()
+knitr::opts_knit$set(root.dir = '../../data/test')
 ```
 
 ## Cargar librerías
@@ -19,6 +18,9 @@ library(ncdf4)
 # Cargar datos de entrenamiento
 
 ## Predictores
+```{r}
+setwd("..")
+```
 
 ```{r}
 ## Precipitación
