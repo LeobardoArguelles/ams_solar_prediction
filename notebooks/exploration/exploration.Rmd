@@ -4,11 +4,6 @@ output: html_notebook
 ---
 
 # Setup
-## Preparar la ruta para obtener los archivos
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_knit$set(root.dir = '../../data/test')
-```
 
 ## Cargar librerías
 ```{r}
@@ -18,42 +13,156 @@ library(ncdf4)
 # Cargar datos de entrenamiento
 
 ## Predictores
-```{r}
-setwd("..")
-```
 
 ```{r}
 ## Precipitación
-apcp <- nc_open("apcp_sfc_latlon_subset_19940101_20071231.nc") 
+apcp <- nc_open("../../data/train/apcp_sfc_latlon_subset_19940101_20071231.nc") 
 ## Flujo de radiación, onda larga
-dlwrf <- nc_open("dlwrf_sfc_latlon_subset_19940101_20071231.nc")
+dlwrf <- nc_open("../../data/train/dlwrf_sfc_latlon_subset_19940101_20071231.nc")
 ## Flujo de radiación, onda corta
-dswrf <- nc_open("dswrf_sfc_latlon_subset_19940101_20071231.nc") 
+dswrf <- nc_open("../../data/train/dswrf_sfc_latlon_subset_19940101_20071231.nc") 
 ## Presión atmosférica
-pres_msl <- nc_open("pres_msl_latlon_subset_19940101_20071231.nc") 
+pres_msl <- nc_open("../../data/train/pres_msl_latlon_subset_19940101_20071231.nc") 
 ## Agua precipitable
-pwat <- nc_open("pwat_eatm_latlon_subset_19940101_20071231.nc") 
+pwat <- nc_open("../../data/train/pwat_eatm_latlon_subset_19940101_20071231.nc") 
 ## Humedad específica, 2 metros sobre el nivel del mar
-spfh <- nc_open("spfh_2m_latlon_subset_19940101_20071231.nc")
+spfh <- nc_open("../../data/train/spfh_2m_latlon_subset_19940101_20071231.nc")
 ## Porcentaje de cielo nublado
-tcdc <- nc_open("tcdc_eatm_latlon_subset_19940101_20071231.nc")
+tcdc <- nc_open("../../data/train/tcdc_eatm_latlon_subset_19940101_20071231.nc")
 ## Nivel de condensación
-tcolc <- nc_open("tcolc_eatm_latlon_subset_19940101_20071231.nc")
+tcolc <- nc_open("../../data/train/tcolc_eatm_latlon_subset_19940101_20071231.nc")
 ## Temperatura máxma
-tmax <- nc_open("tmax_2m_latlon_subset_19940101_20071231.nc")
+tmax <- nc_open("../../data/train/tmax_2m_latlon_subset_19940101_20071231.nc")
 ## Temperatura mínima
-tmin <- nc_open("tmin_2m_latlon_subset_19940101_20071231.nc")
+tmin <- nc_open("../../data/train/tmin_2m_latlon_subset_19940101_20071231.nc")
 ## Temperatura actual, dos metros sobre la superficie
-tmp.2m <- nc_open("tmp_2m_latlon_subset_19940101_20071231.nc")
+tmp.2m <- nc_open("../../data/train/tmp_2m_latlon_subset_19940101_20071231.nc")
 ## Temperatura en la superficie
-tmp.sfc <-nc_open("tmp_sfc_latlon_subset_19940101_20071231.nc")
+tmp.sfc <-nc_open("../../data/train/tmp_sfc_latlon_subset_19940101_20071231.nc")
 ## Radiación onda larga en la superficie
-ulwrf.sfc <- nc_open("ulwrf_sfc_latlon_subset_19940101_20071231.nc")
+ulwrf.sfc <- nc_open("../../data/train/ulwrf_sfc_latlon_subset_19940101_20071231.nc")
 ## Radiación onda larga en la atmosfera
-ulwrf.atm <- nc_open("ulwrf_tatm_latlon_subset_19940101_20071231.nc")
+ulwrf.atm <- nc_open("../../data/train/ulwrf_tatm_latlon_subset_19940101_20071231.nc")
 ## Radiación onda corta en la superficie
-uswrf <- nc_open("uswrf_sfc_latlon_subset_19940101_20071231.nc")
+uswrf <- nc_open("../../data/train/uswrf_sfc_latlon_subset_19940101_20071231.nc")
 
 print("¡Archivos abiertos exitosamente!")
+```
+## Datos de las estaciones
+```{r}
+stations <- read.csv("../../data/station_info.csv")
+```
+
+
+## Resultados
+```{r}
+y <- read.csv("../../data/train.csv")
+```
+
+# Exploración de los datos
+
+```{r}
+printVar <- function(v) {
+  print(attributes(v$var[3]))
+}
+print("Variables:")
+print(attributes(apcp$var))
+
+## Todos tienen el mismo formate que apcp.
+## Nos enforcaremos en la variable única
+printVar(dlwrf)
+printVar(dswrf)
+printVar(pres_msl)
+printVar(pwat)
+printVar(spfh)
+printVar(tcdc)
+printVar(tcolc)
+printVar(tmax)
+printVar(tmin)
+printVar(tmp.2m)
+printVar(tmp.sfc)
+printVar(ulwrf.sfc)
+printVar(ulwrf.atm)
+printVar(uswrf)
+```
+
+```{r}
+precipitation <- ncvar_get(apcp, "Total_precipitation")
+print(dim(precipitation))
+print(apcp)
+```
+```{r}
+namedSeq <- function(name, stop, steps=1, start=1) {
+  return(paste(name, seq(from=start, to=stop, by=steps), sep=""))
+}
+
+nameCols <- function(data) {
+  dimnames(data)[[5]] <- namedSeq("time_", 5113)
+  ## Latitud
+  dimnames(data)[[2]] <- namedSeq("", 39, start=31)
+  ## Longitud
+  dimnames(data)[[1]] <- namedSeq("", 269-360, start=254-360)
+  dimnames(data)[[4]] <- namedSeq("ens_", 11)
+  dimnames(data)[[3]] <- namedSeq("fhour_", 24, steps=3, start=12)
+  
+  return (data)
+}
+```
+
+
+```{r}
+precipitation <- nameCols(precipitation)
+print(dim(precipitation))
+print(precipitation[,,,1,])
+```
+
+```{r}
+print(dlwrf)
+```
+
+```{r}
+timeToDate <- function(data) {
+  dates <- as.Date(as.POSIXct(dlwrf.time*3600,origin='1800-01-01 00:00:00', 'UTC'))
+  dates <- gsub('-', '', dates)
+  dates <- strtoi(dates)
+  return (dates)
+}
+dlwrf.time <- ncvar_get(dlwrf, "time")
+dlwrf.time <- timeToDate(dlwrf.time)
+dlwrf.data <- ncvar_get(dlwrf, "Downward_Long-Wave_Rad_Flux")
+print(range(dlwrf.time))
+```
+```{r}
+dlwrf.data <- nameCols(dlwrf.data)
+dimnames(dlwrf.data)[[5]] <- dlwrf.time
+dlwrf.data.ens1 <- dlwrf.data[,,,1,]
+print(dlwrf.data.ens1[1,1,1,])
+```
+```{r}
+print(names(stations))
+acme <- stations[stations["stid"] == "ACME"]
+print(acme)
+acme.lat <- as.character(round(as.integer(acme[2]), digits=0))
+acme.lon <- as.character(round(as.integer(acme[3]), digits=0))
+print(c(acme.lat, acme.lon))
+```
+```{r}
+acme.dlwrf <- dlwrf.data.ens1[acme.lon, acme.lat,,]
+acme.dlwrf.means <- colMeans(acme.dlwrf)
+acme.final <- data.frame(Date = names(acme.dlwrf.means),dlwrf = acme.dlwrf.means)
+print(acme.final)
+```
+
+```{r}
+y.acme <- y[c("Date", "ACME")]
+colnames(y.acme) <- c("Date", "ACME")
+y.acme <- transform(y.acme, Date=as.character(Date))
+y.acme <- merge(y.acme, acme.final, by="Date")
+print(y.acme)
+```
+```{r}
+lm.fit <- lm(ACME ~ dlwrf + I(dlwrf^2), data=y.acme)
+plot(lm.fit)
+summary(lm.fit)
 ```
 
