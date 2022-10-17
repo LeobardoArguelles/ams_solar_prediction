@@ -136,7 +136,7 @@ print(range(dlwrf.time))
 dlwrf.data <- nameCols(dlwrf.data)
 dimnames(dlwrf.data)[[5]] <- dlwrf.time
 dlwrf.data.ens1 <- dlwrf.data[,,,1,]
-print(dlwrf.data.ens1[1,1,1,])
+print(dlwrf.data[,,,,])
 ```
 ```{r}
 print(names(stations))
