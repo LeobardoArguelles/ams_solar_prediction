@@ -1,0 +1,44 @@
+---
+title: "Reporte de avance"
+output: html_notebook
+date: "2022-10-17"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+# Preparación
+
+## Librerías
+```{r librerias}
+library(ncdf4)
+library(car)
+```
+
+```{r funciones_auxiliares, include=FALSE}
+
+# Get dates with needed format
+time <- ncvar_get(dlwrf, "time")
+dates <- as.Date(as.POSIXct(time*3600, origin='1800-01-01 00:00:00', 'UTC'))
+dates <- gsub('-', '', dates)
+dates <- strtoi(dates)
+
+namedSeq <- function(name, stop, steps=1, start=1) {
+  return(paste(name, seq(from=start, to=stop, by=steps), sep=""))
+}
+
+nameCols <- function(data) {
+  dimnames(data)[[5]] <- dates
+  ## Latitud
+  dimnames(data)[[2]] <- namedSeq("", 39, start=31)
+  ## Longitud
+  dimnames(data)[[1]] <- namedSeq("", 269-360, start=254-360)
+  dimnames(data)[[4]] <- namedSeq("ens_", 11)
+  dimnames(data)[[3]] <- namedSeq("fhour_", 24, steps=3, start=12)
+  
+  return (data)
+}
+```
+

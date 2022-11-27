@@ -1,0 +1,18 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r datos}
+# Cargar datos
+data <- read.csv("datos_procesados.csv")
+```
+
+```{r modelo}
+# Crear el modelo
+lmm.fit <- lm(ACME ~ poly(dlwrf, 2) + poly(dswrf, 3) + ulwrfatm + tmax +
+                tmpsfc + pwat, data=data)
+plot(lmm.fit)
+summary(lmm.fit)
+```
+
