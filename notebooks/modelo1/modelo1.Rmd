@@ -8,31 +8,6 @@ date: "2022-10-17"
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-```{r funciones_auxiliares, include=FALSE}
-
-# Get dates with needed format
-time <- ncvar_get(dlwrf, "time")
-dates <- as.Date(as.POSIXct(time*3600, origin='1800-01-01 00:00:00', 'UTC'))
-dates <- gsub('-', '', dates)
-dates <- strtoi(dates)
-
-namedSeq <- function(name, stop, steps=1, start=1) {
-  return(paste(name, seq(from=start, to=stop, by=steps), sep=""))
-}
-
-nameCols <- function(data) {
-  dimnames(data)[[5]] <- dates
-  ## Latitud
-  dimnames(data)[[2]] <- namedSeq("", 39, start=31)
-  ## Longitud
-  dimnames(data)[[1]] <- namedSeq("", 269-360, start=254-360)
-  dimnames(data)[[4]] <- namedSeq("ens_", 11)
-  dimnames(data)[[3]] <- namedSeq("fhour_", 24, steps=3, start=12)
-  
-  return (data)
-}
-```
-
 
 # Preparación
 
@@ -78,6 +53,30 @@ ulwrf.atm <- nc_open("../../data/train/ulwrf_tatm_latlon_subset_19940101_2007123
 uswrf <- nc_open("../../data/train/uswrf_sfc_latlon_subset_19940101_20071231.nc")
 ```
 
+```{r funciones_auxiliares, include=FALSE}
+
+# Get dates with needed format
+time <- ncvar_get(dlwrf, "time")
+dates <- as.Date(as.POSIXct(time*3600, origin='1800-01-01 00:00:00', 'UTC'))
+dates <- gsub('-', '', dates)
+dates <- strtoi(dates)
+
+namedSeq <- function(name, stop, steps=1, start=1) {
+  return(paste(name, seq(from=start, to=stop, by=steps), sep=""))
+}
+
+nameCols <- function(data) {
+  dimnames(data)[[5]] <- dates
+  ## Latitud
+  dimnames(data)[[2]] <- namedSeq("", 39, start=31)
+  ## Longitud
+  dimnames(data)[[1]] <- namedSeq("", 269-360, start=254-360)
+  dimnames(data)[[4]] <- namedSeq("ens_", 11)
+  dimnames(data)[[3]] <- namedSeq("fhour_", 24, steps=3, start=12)
+  
+  return (data)
+}
+```
 ### Datos de las estaciones
 ```{r estaciones}
 stations <- read.csv("../../data/station_info.csv")
@@ -166,6 +165,7 @@ uswrf.data <- ncvar_get(uswrf, "Upward_Short-Wave_Rad_Flux")
 ```
 
 ```{r etiquetar_datos}
+print(dimnames(apcp.data))
 apcp.data <- nameCols(apcp.data)
 dlwrf.data <- nameCols(dlwrf.data)
 dswrf.data <- nameCols(dswrf.data)
@@ -367,7 +367,7 @@ Ya que se tienen los predictores, solo hace falta conocer cuánta energía se
 generó en ACME con esos valores de `dlwrf` y `dswrf`.
 
 ```{r energia_acme}
-energy.acme <- energy[c("Date", "ACME")]
+energy.acme <- energy_train[c("Date", "ACME")]
 colnames(energy.acme) <- c("Date", "ACME")
 
 # Hay que tener el mismo formato para combinarlo con nuestros predictores
@@ -375,9 +375,18 @@ energy.acme <- transform(energy.acme, Date=as.character(Date))
 print(energy.acme)
 ```
 
+```{r estandarize}
+standarized <- data.frame(scale(acme.final[-1]))
+standarized$Date <- acme.final$Date
+
+print(standarized)
+
+```
+
+
 Y se combina con los predictores en un solo Dataframe para poder crear modelos.
 ```{r crear_datos_entrenamiento_final}
-energy.acme <- merge(energy.acme, acme.final, by="Date")
+energy.acme <- merge(energy.acme, standarized, by="Date")
 ```
 
 ```{r}
@@ -387,6 +396,11 @@ print(energy.acme)
 
 
 # Creación de modelos
+```{r}
+sapply(energy.acme, max)
+```
+
+
 ```{r}
 cor(energy.acme[, -1])
 ```
@@ -412,5 +426,175 @@ Mean ACME: 16 877 462
 RSE ~ 19.83%
 ```{r}
 mean(energy.acme$ACME)
+```
+
+# Prueba
+## Cargar datos prueba
+
+### Resultados de entrenamiento
+```{r energy_test}
+adax <- stations[stations["stid"] == "ADAX"]
+
+# Se redondea porque los archivos de los predictores tienen coordenadas enteras.
+# Se tomará la medición más cercana.
+adax.lat <- as.character(round(as.numeric(acme[2])))
+adax.lon <- as.character(round(as.numeric(acme[3])))
+print(c(adax.lat, adax.lon))
+```
+
+```{r}
+# Primero obtener las variables de interés
+apcp.test.data <- ncvar_get(apcp, "Total_precipitation")
+dlwrf.test.data <- ncvar_get(dlwrf, "Downward_Long-Wave_Rad_Flux")
+dswrf.test.data <- ncvar_get(dswrf, "Downward_Short-Wave_Rad_Flux")
+pres_msl.test.data <- ncvar_get(pres_msl, "Pressure")
+pwat.test.data <- ncvar_get(pwat, "Precipitable_water")
+spfh.test.data <- ncvar_get(spfh, "Specific_humidity_height_above_ground")
+tcdc.test.data <- ncvar_get(tcdc, "Total_cloud_cover")
+tcolc.test.data <- ncvar_get(tcolc, "Total_Column-Integrated_Condensate")
+tmax.test.data <- ncvar_get(tmax, "Maximum_temperature")
+tmin.test.data <- ncvar_get(tmin, "Minimum_temperature")
+tmp2m.test.data <- ncvar_get(tmp.2m, "Temperature_height_above_ground")
+tmpsfc.test.data <- ncvar_get(tmp.sfc, "Temperature_surface")
+ulwrfsfc.test.data <- ncvar_get(ulwrf.sfc, "Upward_Long-Wave_Rad_Flux_surface")
+ulwrfatm.test.data <- ncvar_get(ulwrf.atm, "Upward_Long-Wave_Rad_Flux")
+uswrf.test.data <- ncvar_get(uswrf, "Upward_Short-Wave_Rad_Flux")
+```
+
+```{r}
+apcp.test.data <- nameCols(apcp.test.data)
+dlwrf.test.data <- nameCols(dlwrf.test.data)
+dswrf.test.data <- nameCols(dswrf.test.data)
+pres_msl.test.data <- nameCols(pres_msl.test.data)
+pwat.test.data <- nameCols(pwat.test.data)
+spfh.test.data <- nameCols(spfh.test.data)
+tcdc.test.data <- nameCols(tcdc.test.data)
+tcolc.test.data <- nameCols(tcolc.test.data)
+tmax.test.data <- nameCols(tmax.test.data)
+tmin.test.data <- nameCols(tmin.test.data)
+tmp2m.test.data <- nameCols(tmp2m.test.data)
+tmpsfc.test.data <- nameCols(tmpsfc.test.data)
+ulwrfsfc.test.data <- nameCols(ulwrfsfc.test.data)
+ulwrfatm.test.data <- nameCols(ulwrfatm.test.data)
+uswrf.test.data <- nameCols(uswrf.test.data)
+```
+
+```{r}
+apcp.test.data.e1 <- apcp.test.data[,,,1,]
+dlwrf.test.data.e1 <- dlwrf.test.data[,,,1,]
+dswrf.test.data.e1 <- dswrf.test.data[,,,1,]
+pres_msl.test.data.e1 <- pres_msl.test.data[,,,1,]
+pwat.test.data.e1 <- pwat.test.data[,,,1,]
+spfh.test.data.e1 <- spfh.test.data[,,,1,]
+tcdc.test.data.e1 <- tcdc.test.data[,,,1,]
+tcolc.test.data.e1 <- tcolc.test.data[,,,1,]
+tmax.test.data.e1 <- tmax.test.data[,,,1,]
+tmin.test.data.e1 <- tmin.test.data[,,,1,]
+tmp2m.test.data.e1 <- tmp2m.test.data[,,,1,]
+tmpsfc.test.data.e1 <- tmpsfc.test.data[,,,1,]
+ulwrfsfc.test.data.e1 <- ulwrfsfc.test.data[,,,1,]
+ulwrfatm.test.data.e1 <- ulwrfatm.test.data[,,,1,]
+uswrf.test.data.e1 <- uswrf.test.data[,,,1,]
+
+dim(dlwrf.data.e1)
+```
+### Tiempo
+
+# Preparar los subconjuntos de entrenamiento
+
+```{r}
+
+adax.test.apcp <- apcp.test.data.e1[adax.lon, adax.lat, ,]
+adax.test.dlwrf <- dlwrf.test.data.e1[adax.lon, adax.lat, ,]
+adax.test.dswrf <- dswrf.test.data.e1[adax.lon, adax.lat, ,]
+adax.test.pres_msl <- pres_msl.test.data.e1[adax.lon, adax.lat, ,]
+adax.test.pwat <- pwat.test.data.e1[adax.lon, adax.lat, ,]
+adax.test.spfh <- spfh.test.data.e1[adax.lon, adax.lat, ,]
+adax.test.tcdc <- tcdc.test.data.e1[adax.lon, adax.lat, ,]
+adax.test.tcolc <- tcolc.test.data.e1[adax.lon, adax.lat, ,]
+adax.test.tmax <- tmax.test.data.e1[adax.lon, adax.lat, ,]
+adax.test.tmin <- tmin.test.data.e1[adax.lon, adax.lat, ,]
+adax.test.tmp2m <- tmp2m.test.data.e1[adax.lon, adax.lat, ,]
+adax.test.tmpsfc <- tmpsfc.test.data.e1[adax.lon, adax.lat, ,]
+adax.test.ulwrfsfc <- ulwrfsfc.test.data.e1[adax.lon, adax.lat, ,]
+adax.test.ulwrfatm <- ulwrfatm.test.data.e1[adax.lon, adax.lat, ,]
+adax.test.uswrf <- uswrf.test.data.e1[adax.lon, adax.lat, ,]
+```
+
+```{r}
+adax.test.apcp.means <- colMeans(adax.test.apcp)
+adax.test.dlwrf.means <- colMeans(adax.test.dlwrf)
+adax.test.dswrf.means <- colMeans(adax.test.dswrf)
+adax.test.pres_msl.means <- colMeans(adax.test.pres_msl)
+adax.test.pwat.means <- colMeans(adax.test.pwat)
+adax.test.spfh.means <- colMeans(adax.test.spfh)
+adax.test.tcdc.means <- colMeans(adax.test.tcdc)
+adax.test.tcolc.means <- colMeans(adax.test.tcolc)
+adax.test.tmax.means <- colMeans(adax.test.tmax)
+adax.test.tmin.means <- colMeans(adax.test.tmin)
+adax.test.tmp2m.means <- colMeans(adax.test.tmp2m)
+adax.test.tmpsfc.means <- colMeans(adax.test.tmpsfc)
+adax.test.ulwrfsfc.means <- colMeans(adax.test.ulwrfsfc)
+adax.test.ulwrfatm.means <- colMeans(adax.test.ulwrfatm)
+adax.test.uswrf.means <- colMeans(adax.test.uswrf)
+```
+
+
+```{r}
+adax.final.test <- data.frame(
+  Date = names(adax.test.dlwrf.means),
+  apcp = adax.test.apcp.means,
+  dlwrf = adax.test.dlwrf.means,
+  dswrf = adax.test.dswrf.means,
+  pres_msl = adax.test.pres_msl.means,
+  pwat = adax.test.pwat.means,
+  spfh = adax.test.spfh.means,
+  tcdc = adax.test.tcdc.means,
+  tcolc = adax.test.tcolc.means,
+  tmax = adax.test.tmax.means,
+  tmin = adax.test.tmin.means,
+  tmp2m = adax.test.tmp2m.means,
+  tmpsfc = adax.test.tmpsfc.means,
+  ulwrfsfc = adax.test.ulwrfsfc.means,
+  ulwrfatm = adax.test.ulwrfatm.means,
+  uswrf = adax.test.uswrf.means
+)
+print(adax.final.test)
+```
+
+## Respuesta esperada
+
+```{r}
+energy.adax.test <- energy_train[c("Date", "ADAX")]
+colnames(energy.adax.test) <- c("Date", "ADAX")
+
+# Hay que tener el mismo formato para combinarlo con nuestros predictores
+energy.adax.test <- transform(energy.adax.test, Date=as.character(Date))
+```
+
+```{r}
+standarized.test <- data.frame(scale(adax.final.test[-1]))
+standarized.test$Date <- adax.final.test$Date
+
+print(standarized.test)
+```
+
+
+Y se combina con los predictores en un solo Dataframe para poder crear modelos.
+```{r}
+energy.adax.test <- merge(energy.adax.test, standarized.test, by="Date")
+```
+
+
+## Regresión lineal múltiple
+```{r test}
+sapply(energy.adax.test, class)
+predictions <- predict(lmm.fit, energy.adax.test[-1])
+```
+
+```{r rse}
+y <- energy.adax.test["ADAX"]
+
+print(100*sum((y - predictions)**2) / sum((y - mean(y$ADAX))**2))
 ```
 
