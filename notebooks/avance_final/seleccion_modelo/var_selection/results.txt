@@ -1,0 +1,33 @@
+
+Call:
+lm(formula = ACME ~ apcp + dlwrf + dswrf + pres_msl + pwat + 
+    spfh + tcolc + tmax + tmin + tmp2m + tmpsfc + ulwrfsfc + 
+    ulwrfatm, data = data)
+
+Residuals:
+      Min        1Q    Median        3Q       Max 
+-19765742  -1330508    443022   1903792  16112605 
+
+Coefficients:
+              Estimate Std. Error t value Pr(>|t|)    
+(Intercept)  5.092e+07  2.544e+07   2.002   0.0454 *  
+apcp        -1.673e+05  5.614e+04  -2.979   0.0029 ** 
+dlwrf       -5.735e+04  4.823e+03 -11.891  < 2e-16 ***
+dswrf        3.954e+04  8.419e+02  46.962  < 2e-16 ***
+pres_msl     7.419e+02  9.169e+01   8.091 7.34e-16 ***
+pwat        -1.360e+05  1.408e+04  -9.657  < 2e-16 ***
+spfh         2.505e+08  4.017e+07   6.236 4.86e-10 ***
+tcolc        8.503e+06  7.470e+05  11.384  < 2e-16 ***
+tmax        -1.382e+06  1.275e+05 -10.835  < 2e-16 ***
+tmin        -6.286e+05  8.151e+04  -7.713 1.47e-14 ***
+tmp2m        2.789e+06  1.767e+05  15.780  < 2e-16 ***
+tmpsfc      -1.437e+06  1.278e+05 -11.243  < 2e-16 ***
+ulwrfsfc     2.022e+05  1.871e+04  10.802  < 2e-16 ***
+ulwrfatm     2.208e+04  2.478e+03   8.912  < 2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 3390000 on 5099 degrees of freedom
+Multiple R-squared:  0.815,	Adjusted R-squared:  0.8145 
+F-statistic:  1727 on 13 and 5099 DF,  p-value: < 2.2e-16
+
