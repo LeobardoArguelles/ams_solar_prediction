@@ -1,8 +1,14 @@
 
-data <- read.csv("../datos_procesados.csv")
+library(forecast)
+data <- subset(read.csv("../datos_procesados.csv"), select=-c(X))
 
-x11()
-png(file="timeseries.png")
-plot(1:length(data$ACME), data$ACME, type="l", col=4)
-locator(1)
-dev.off()
+data[1:32, c("Date", "apcp")]
+
+## tsdata <- ts(data$apcp, frequency=1)
+## apcp_data <- decompose(tsdata, "multiplicative")
+
+## x11()
+## ## png(file="timeseries.png")
+## plot(apcp_data)
+## locator(1)
+## ## dev.off()
